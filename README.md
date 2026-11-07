@@ -39,7 +39,7 @@ You need **Python 3.11 or newer**. If your system Python is older, [uv](https://
 ### 1. Install
 
 ```bash
-git clone <this repo> grammar-agent && cd grammar-agent
+git clone https://github.com/msell587/grammar-agent.git && cd grammar-agent
 ```
 
 ```bash
