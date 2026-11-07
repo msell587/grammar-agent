@@ -98,6 +98,8 @@ def cmd_check(args: argparse.Namespace, client: LLMClient | None = None) -> int:
         cache_path=args.cache,
         mock_script=args.mock_script,
     )
+    if settings.provider == "mock" and args.delay is None:
+        settings = settings.with_overrides(request_delay=0.0)  # no rate limit to respect
     out: Path = args.out
     if (out / RESULTS_FILE).exists() and not args.force:
         raise ConfigError(f"{out} already contains a run; use --force or another --out")
