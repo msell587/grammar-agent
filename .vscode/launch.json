@@ -1,0 +1,42 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "check: sample (offline mock demo)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "grammar_agent",
+      "args": ["check", "examples/sample.txt", "--out", "runs/demo", "--provider", "mock",
+               "--mock-script", "examples/demo_replies.json", "--force"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "check: sample (live, uses .env)",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "grammar_agent",
+      "args": ["check", "examples/sample.txt", "--out", "runs/live", "--force"],
+      "envFile": "${workspaceFolder}/.env",
+      "console": "integratedTerminal",
+      "justMyCode": true
+    },
+    {
+      "name": "apply: review a run",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "grammar_agent",
+      "args": ["apply", "${input:runDir}", "--force"],
+      "console": "integratedTerminal",
+      "justMyCode": true
+    }
+  ],
+  "inputs": [
+    {
+      "id": "runDir",
+      "type": "promptString",
+      "description": "Run directory to review",
+      "default": "runs/demo"
+    }
+  ]
+}

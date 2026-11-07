@@ -1,0 +1,52 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Install (venv + dev deps)",
+      "type": "shell",
+      "command": "uv venv --python 3.12 .venv && uv pip install --python .venv/bin/python -e '.[dev]'",
+      "problemMatcher": []
+    },
+    {
+      "label": "Test",
+      "type": "shell",
+      "command": "${workspaceFolder}/.venv/bin/pytest",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Lint + type check",
+      "type": "shell",
+      "command": "${workspaceFolder}/.venv/bin/ruff check . && ${workspaceFolder}/.venv/bin/ruff format --check . && ${workspaceFolder}/.venv/bin/mypy",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "Check sample (offline mock demo)",
+      "type": "shell",
+      "command": "${workspaceFolder}/.venv/bin/grammar-agent check examples/sample.txt --out runs/demo --provider mock --mock-script examples/demo_replies.json --force",
+      "problemMatcher": []
+    },
+    {
+      "label": "Check sample (live, uses .env provider)",
+      "type": "shell",
+      "command": "${workspaceFolder}/.venv/bin/grammar-agent check examples/sample.txt --out runs/live --force",
+      "problemMatcher": []
+    },
+    {
+      "label": "Review + apply a run",
+      "type": "shell",
+      "command": "${workspaceFolder}/.venv/bin/grammar-agent apply ${input:runDir}",
+      "presentation": { "focus": true, "panel": "dedicated" },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "runDir",
+      "type": "promptString",
+      "description": "Run directory to review",
+      "default": "runs/live"
+    }
+  ]
+}

@@ -216,6 +216,8 @@ pytest
 ruff check . && ruff format --check . && mypy
 ```
 
+**In VS Code:** open the folder and install the recommended extensions when prompted. The `.venv` interpreter is selected automatically, and tests appear in the Testing panel. `Terminal → Run Task…` offers Test, Lint + type check, the offline demo, a live check and a review. The Run and Debug panel has launch configs for `check` and `apply`, so you can set breakpoints in the pipeline.
+
 The tests cover sentence splitting, JSON parsing and retries, each guardrail, applying approved changes, the cache, rate-limit backoff, the report and the CLI. They use `MockClient`, plus `httpx.MockTransport` for the HTTP layer, so they make **no network calls** and finish in well under a second. mypy runs in `--strict` mode over both the source code and the tests.
 
 ```
