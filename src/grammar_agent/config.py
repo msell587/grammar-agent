@@ -14,7 +14,7 @@ PROVIDERS = ("gemini", "groq", "ollama", "mock")
 LEVELS = ("beginner", "intermediate", "advanced")
 
 DEFAULT_MODELS = {
-    "gemini": "gemini-2.5-flash",
+    "gemini": "gemini-3.5-flash",
     "groq": "llama-3.3-70b-versatile",
     "ollama": "llama3.1:8b",
     "mock": "mock",

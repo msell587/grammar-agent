@@ -36,7 +36,7 @@ class LLMClient(Protocol):
 
     @property
     def model_id(self) -> str:
-        """A stable identifier such as ``"gemini:gemini-2.5-flash"`` (used in cache keys)."""
+        """A stable identifier such as ``"gemini:gemini-3.5-flash"`` (used in cache keys)."""
         ...
 
     def complete(self, system: str, user: str) -> str:

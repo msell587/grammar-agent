@@ -64,7 +64,7 @@ def test_persistent_rate_limit_flags_sentence(settings: Settings) -> None:
     client = MockClient({S: RateLimitError("429")})
     result = Checker(client, settings, limiter=no_sleep_limiter()).check_sentence(sentence())
     assert result.status is Status.NEEDS_REVIEW
-    assert "rate-limiting" in result.review_reasons[0]
+    assert "rate-limited, overloaded or timed out" in result.review_reasons[0]
 
 
 def test_non_fatal_error_flags_sentence(settings: Settings) -> None:

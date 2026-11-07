@@ -87,7 +87,10 @@ class Checker:
         try:
             raw, error = self._get_raw(sentence.text)
         except RateLimitError as exc:
-            return flagged(f"the provider kept rate-limiting requests ({exc}); try again later")
+            return flagged(
+                f"the provider was rate-limited, overloaded or timed out after retries ({exc}); "
+                "run check again later (cached sentences are free)"
+            )
         except LLMError as exc:
             if exc.fatal:
                 raise

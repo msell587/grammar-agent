@@ -66,7 +66,7 @@ cp .env.example .env
 
 Open `.env` and paste your key after `GEMINI_API_KEY=`. `.env` is listed in `.gitignore`, so the key is never committed. The code reads keys only from the environment and sends them only in HTTP headers, never in URLs.
 
-**Free-tier limits change.** At the time of writing the free tier allows roughly 10 requests per minute for `gemini-2.5-flash`, so the default `GRAMMAR_AGENT_REQUEST_DELAY` is 6.5 seconds. Check the [current limits](https://ai.google.dev/gemini-api/docs/rate-limits) and change `GEMINI_MODEL` or the delay in `.env` if needed. For example, `gemini-2.5-flash-lite` usually allows more requests per day.
+**Free-tier limits change.** The default model is `gemini-3.5-flash`. Each model has its own free quota, and the newest models can be very small: on the account this was tested with, `gemini-3.8-flash` allowed only 20 requests per day, and older models such as `gemini-2.5-flash` are not offered to new accounts. The default `GRAMMAR_AGENT_REQUEST_DELAY` of 6.5 seconds spaces requests to about 9 per minute. If you see HTTP 404, 429 or 503 errors, check the [current limits](https://ai.google.dev/gemini-api/docs/rate-limits) and change `GEMINI_MODEL` in `.env`. Sentences that hit these errors are flagged rather than lost, and rerunning `check` only calls the model for sentences that are not already cached.
 
 **Privacy.** On the free tier, Google may use what you send to improve its products. Don't send private or confidential text. Use Ollama for that.
 
