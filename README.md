@@ -66,6 +66,18 @@ cp .env.example .env
 
 Open `.env` and paste your key after `GEMINI_API_KEY=`. `.env` is listed in `.gitignore`, so the key is never committed. The code reads keys only from the environment and sends them only in HTTP headers, never in URLs.
 
+Settings are read from the first of these that exists, and real environment variables always win:
+
+1. the file named by `GRAMMAR_AGENT_ENV_FILE`, if set;
+2. `./.env` in the folder you run the command from;
+3. `~/.config/grammar-agent/.env`, a private per-user file. Use this one for a global install, so your keys never sit inside a project folder:
+
+```bash
+mkdir -p ~/.config/grammar-agent && cp .env ~/.config/grammar-agent/.env && chmod 600 ~/.config/grammar-agent/.env
+```
+
+The response cache lives in `~/.cache/grammar-agent/` by default.
+
 **Free-tier limits change.** The default model is `gemini-3.5-flash`. Each model has its own free quota, and the newest models can be very small: on the account this was tested with, `gemini-3.8-flash` allowed only 20 requests per day, and older models such as `gemini-2.5-flash` are not offered to new accounts. The default `GRAMMAR_AGENT_REQUEST_DELAY` of 6.5 seconds spaces requests to about 9 per minute. If you see HTTP 404, 429 or 503 errors, check the [current limits](https://ai.google.dev/gemini-api/docs/rate-limits) and change `GEMINI_MODEL` in `.env`. Sentences that hit these errors are flagged rather than lost, and rerunning `check` only calls the model for sentences that are not already cached.
 
 **Privacy.** On the free tier, Google may use what you send to improve its products. Don't send private or confidential text. Use Ollama for that.
@@ -111,8 +123,37 @@ Useful options:
 | `--max-length-ratio 0.3` | Rewrite guardrail threshold (see below) |
 | `--no-cache`, `--cache PATH` | Skip the cache, or use a different cache file |
 | `--force` | Overwrite an existing run (`check`) or existing decisions (`apply`) |
+| `apply --accept IDS --reject IDS` | Non-interactive decisions, for example `--accept all --reject 2.1,4.1` or `--accept 1.1,1.2 --reject all`. The two lists must cover every change, so nothing is accepted by leaving it out. Recorded as `"decided_by": "human"` with `"mode": "explicit-ids"` |
 | `apply --auto-approve` | Non-interactive: accept every change that passed the guardrails. Each decision is recorded as `"decided_by": "auto"`. Flagged sentences still stay unchanged |
 | `-v` | Debug logging (for example, malformed replies and retries) |
+
+### Install globally
+
+To run `grammar-agent` from any folder, install it as a tool and put your keys in `~/.config/grammar-agent/.env` (see above):
+
+```bash
+uv tool install --python 3.12 --editable .
+```
+
+`--editable` means later changes to this folder take effect without reinstalling.
+
+### Use it from Claude Code
+
+A [Claude Code skill](https://docs.claude.com/en/docs/claude-code/skills) can drive the tool from a chat. Ask "grammar-check my-essay.txt", or type `/grammar-check my-essay.txt`. Claude runs `check`, shows you the numbered changes, asks which to accept, then runs `apply --accept … --reject …` with exactly your answer. Your keys stay hidden from Claude:
+- The skill instructions forbid reading or printing any `.env` file, and `grammar-agent` loads the keys itself.
+- Permission deny rules in `~/.claude/settings.json` block Claude Code from opening the key files at all:
+
+```json
+"permissions": {
+  "deny": [
+    "Read(~/.config/grammar-agent/.env)",
+    "Edit(~/.config/grammar-agent/.env)",
+    "Bash(cat ~/.config/grammar-agent/.env*)"
+  ]
+}
+```
+
+The skill lives in `~/.claude/skills/grammar-check/SKILL.md`, outside this repository.
 
 ## Example run
 
