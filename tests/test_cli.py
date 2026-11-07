@@ -59,3 +59,39 @@ def test_missing_api_key_is_a_clean_error(
     code = cli.main(["check", str(src), "--out", str(tmp_path / "r"), "--provider", "gemini"])
     assert code == 1
     assert "GEMINI_API_KEY" in capsys.readouterr().err
+
+
+def test_apply_with_explicit_ids(tmp_path: Path) -> None:
+    script = tmp_path / "script.json"
+    script.write_text(
+        json.dumps(
+            {
+                "Teh cat sat.": {
+                    "original": "Teh cat sat.",
+                    "corrected": "The cat sat.",
+                    "meaning_preserved": True,
+                    "changes": [
+                        {
+                            "original_span": "Teh",
+                            "replacement": "The",
+                            "type": "spelling",
+                            "explanation": "Typo.",
+                        }
+                    ],
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    src = tmp_path / "in.txt"
+    src.write_text("Teh cat sat.", encoding="utf-8")
+    out = tmp_path / "run"
+    assert cli.main(["check", str(src), "--out", str(out), "--mock-script", str(script)]) == 0
+    assert cli.main(["apply", str(out), "--accept", "all", "--auto-approve"]) == 1
+    assert cli.main(["apply", str(out), "--reject", "all"]) == 0
+    assert (out / "approved.txt").read_text(encoding="utf-8") == "Teh cat sat."
+    assert cli.main(["apply", str(out), "--accept", "1.1", "--force"]) == 0
+    assert (out / "approved.txt").read_text(encoding="utf-8") == "The cat sat."
+    doc = json.loads((out / "decisions.json").read_text())
+    assert doc["mode"] == "explicit-ids"
+    assert doc["decisions"][0]["decided_by"] == "human"

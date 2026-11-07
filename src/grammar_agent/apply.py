@@ -94,3 +94,49 @@ def write_outputs(run: Run, decisions: list[Decision], run_dir: Path, mode: str)
     )
     (run_dir / APPROVED_FILE).write_text(approved, encoding="utf-8")
     return approved
+
+
+def _parse_ids(raw: str | None) -> set[str] | str | None:
+    """Parse "1.1, [2.3],4.1" into ids, or return "all"."""
+    if raw is None:
+        return None
+    if raw.strip().lower() == "all":
+        return "all"
+    return {part.strip().strip("[]") for part in raw.split(",") if part.strip()}
+
+
+def decisions_from_lists(run: Run, accept: str | None, reject: str | None) -> list[Decision]:
+    """Build decisions from explicit id lists, e.g. ``accept="all", reject="4.1"``.
+
+    Either list may be ``"all"`` to mean "every change not named in the other list".
+    Otherwise the two lists together must name every reviewable change exactly once,
+    so nothing is accepted by omission.
+    """
+    ids = [c.id for c in reviewable_changes(run)]
+    acc, rej = _parse_ids(accept), _parse_ids(reject)
+    if acc is None and rej is None:
+        raise DecisionError("give --accept and/or --reject")
+    if acc == "all" and rej == "all":
+        raise DecisionError("--accept and --reject cannot both be 'all'")
+    named = (acc if isinstance(acc, set) else set()) | (rej if isinstance(rej, set) else set())
+    unknown = named - set(ids)
+    if unknown:
+        raise DecisionError(f"unknown or non-reviewable change ids: {', '.join(sorted(unknown))}")
+    if isinstance(acc, set) and isinstance(rej, set) and acc & rej:
+        raise DecisionError(f"accepted and rejected at once: {', '.join(sorted(acc & rej))}")
+
+    if acc == "all":
+        rejected = rej if isinstance(rej, set) else set()
+        accepted = set(ids) - rejected
+    elif rej == "all":
+        accepted = acc if isinstance(acc, set) else set()
+        rejected = set(ids) - accepted
+    else:
+        accepted = acc if isinstance(acc, set) else set()
+        rejected = rej if isinstance(rej, set) else set()
+        missing = set(ids) - accepted - rejected
+        if missing:
+            raise DecisionError(
+                "every change needs a decision; not decided: " + ", ".join(sorted(missing))
+            )
+    return [Decision(i, i in accepted, "human") for i in ids]

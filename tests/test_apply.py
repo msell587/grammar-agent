@@ -123,3 +123,50 @@ def test_interactive_quit_aborts(answers: list[str]) -> None:
     _, ask = scripted(answers)
     with pytest.raises(ReviewAborted):
         interactive_review(make_run(), ask, lambda _: None)  # type: ignore[arg-type]
+
+
+def ids(decisions: list[Decision]) -> list[tuple[str, bool]]:
+    return [(d.change_id, d.accepted) for d in decisions]
+
+
+def test_explicit_accept_all_except() -> None:
+    from grammar_agent.apply import decisions_from_lists
+
+    decisions = decisions_from_lists(make_run(), "all", "[1.2]")
+    assert ids(decisions) == [("1.1", True), ("1.2", False), ("1.3", True)]
+    assert {d.decided_by for d in decisions} == {"human"}
+
+
+def test_explicit_reject_all_except() -> None:
+    from grammar_agent.apply import decisions_from_lists
+
+    assert ids(decisions_from_lists(make_run(), "1.3", "all")) == [
+        ("1.1", False),
+        ("1.2", False),
+        ("1.3", True),
+    ]
+
+
+def test_explicit_lists_must_cover_everything() -> None:
+    from grammar_agent.apply import decisions_from_lists
+
+    assert ids(decisions_from_lists(make_run(), "1.1, 1.3", "1.2"))[1] == ("1.2", False)
+    with pytest.raises(DecisionError, match=r"not decided: 1\.3"):
+        decisions_from_lists(make_run(), "1.1", "1.2")
+
+
+@pytest.mark.parametrize(
+    ("accept", "reject", "message"),
+    [
+        (None, None, "give --accept"),
+        ("all", "all", "cannot both"),
+        ("all", "9.9", "unknown"),
+        ("2.1", "all", "unknown"),  # sentence 2 is flagged: not reviewable
+        ("1.1,1.2,1.3", "1.1", "at once"),
+    ],
+)
+def test_explicit_lists_errors(accept: str | None, reject: str | None, message: str) -> None:
+    from grammar_agent.apply import decisions_from_lists
+
+    with pytest.raises(DecisionError, match=message):
+        decisions_from_lists(make_run(), accept, reject)

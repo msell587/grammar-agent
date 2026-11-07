@@ -1,10 +1,17 @@
-"""Runtime settings, read from the environment (and ``.env``) with CLI overrides."""
+"""Runtime settings, read from the environment (and ``.env`` files) with CLI overrides.
+
+``.env`` lookup order (earlier wins; real environment variables beat all files):
+
+1. ``$GRAMMAR_AGENT_ENV_FILE`` if set (and then nothing else),
+2. ``./.env`` in the current directory (handy while developing),
+3. ``~/.config/grammar-agent/.env`` (the private, per-user file for a global install).
+"""
 
 from __future__ import annotations
 
 import os
 from collections.abc import Mapping
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +26,36 @@ DEFAULT_MODELS = {
     "ollama": "llama3.1:8b",
     "mock": "mock",
 }
+
+
+def _xdg(var: str, fallback: str) -> Path:
+    value = os.environ.get(var)
+    return Path(value) if value else Path.home() / fallback
+
+
+def user_env_file() -> Path:
+    return _xdg("XDG_CONFIG_HOME", ".config") / "grammar-agent" / ".env"
+
+
+def default_cache_path() -> Path:
+    return _xdg("XDG_CACHE_HOME", ".cache") / "grammar-agent" / "responses.sqlite"
+
+
+def env_files() -> list[Path]:
+    """The .env files that would be loaded, in priority order (existing files only)."""
+    explicit = os.environ.get("GRAMMAR_AGENT_ENV_FILE")
+    candidates = (
+        [Path(explicit).expanduser()] if explicit else [Path.cwd() / ".env", user_env_file()]
+    )
+    return [p for p in candidates if p.is_file()]
+
+
+def load_env_files() -> list[Path]:
+    """Load the .env files into ``os.environ`` without overriding variables already set."""
+    files = env_files()
+    for path in files:
+        load_dotenv(path, override=False)
+    return files
 
 
 class ConfigError(ValueError):
@@ -44,7 +81,7 @@ class Settings:
     timeout: float = 60.0
 
     # Cache
-    cache_path: Path = Path(".grammar_agent_cache.sqlite")
+    cache_path: Path = field(default_factory=default_cache_path)
     use_cache: bool = True
 
     # Provider credentials / endpoints (never logged)
@@ -86,7 +123,7 @@ def load_settings(env: Mapping[str, str] | None = None, *, dotenv: bool = True) 
     """Build settings from ``env`` (defaults to ``os.environ`` after loading ``.env``)."""
     if env is None:
         if dotenv:
-            load_dotenv()
+            load_env_files()
         env = os.environ
     provider = env.get("GRAMMAR_AGENT_PROVIDER", "gemini").strip().lower() or "gemini"
     model_var = {"gemini": "GEMINI_MODEL", "groq": "GROQ_MODEL", "ollama": "OLLAMA_MODEL"}
@@ -97,7 +134,9 @@ def load_settings(env: Mapping[str, str] | None = None, *, dotenv: bool = True) 
         level=env.get("GRAMMAR_AGENT_LEVEL", "intermediate").strip().lower() or "intermediate",
         request_delay=_float(env, "GRAMMAR_AGENT_REQUEST_DELAY", Settings.request_delay),
         max_length_ratio=_float(env, "GRAMMAR_AGENT_MAX_LENGTH_RATIO", Settings.max_length_ratio),
-        cache_path=Path(env.get("GRAMMAR_AGENT_CACHE", "") or Settings.cache_path),
+        cache_path=Path(env["GRAMMAR_AGENT_CACHE"]).expanduser()
+        if env.get("GRAMMAR_AGENT_CACHE")
+        else default_cache_path(),
         gemini_api_key=env.get("GEMINI_API_KEY") or None,
         groq_api_key=env.get("GROQ_API_KEY") or None,
         ollama_host=env.get("OLLAMA_HOST", "") or Settings.ollama_host,

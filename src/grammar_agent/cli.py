@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 
 from grammar_agent import __version__
-from grammar_agent.apply import DecisionError, write_outputs
+from grammar_agent.apply import DecisionError, decisions_from_lists, write_outputs
 from grammar_agent.cache import ResponseCache
 from grammar_agent.checker import Checker
 from grammar_agent.config import LEVELS, PROVIDERS, ConfigError, load_settings
@@ -63,6 +63,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--auto-approve",
         action="store_true",
         help="accept every change that passed the guardrails (recorded as 'auto')",
+    )
+    apply.add_argument(
+        "--accept",
+        metavar="IDS",
+        help="non-interactive: change ids to accept (e.g. 1.1,2.3) or 'all'",
+    )
+    apply.add_argument(
+        "--reject", metavar="IDS", help="non-interactive: change ids to reject, or 'all'"
     )
     apply.add_argument("--force", action="store_true", help="overwrite existing decisions")
     return parser
@@ -138,11 +146,18 @@ def cmd_apply(args: argparse.Namespace) -> int:
     run = load_run(run_dir)
     if (run_dir / DECISIONS_FILE).exists() and not args.force:
         raise ConfigError(f"{run_dir / DECISIONS_FILE} already exists; use --force to redo")
+    explicit = args.accept is not None or args.reject is not None
+    if args.auto_approve and explicit:
+        raise ConfigError("use either --auto-approve or --accept/--reject, not both")
     if args.auto_approve:
         decisions, mode = auto_approve(run), "auto-approve"
+    elif explicit:
+        decisions, mode = decisions_from_lists(run, args.accept, args.reject), "explicit-ids"
     else:
         if not sys.stdin.isatty():
-            raise ConfigError("interactive review needs a terminal; use --auto-approve")
+            raise ConfigError(
+                "interactive review needs a terminal; use --accept/--reject or --auto-approve"
+            )
         try:
             decisions, mode = interactive_review(run), "interactive"
         except ReviewAborted:

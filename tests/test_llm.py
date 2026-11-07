@@ -122,3 +122,30 @@ def test_mock_script_file(tmp_path: object) -> None:
     client = make_client(settings)
     assert json.loads(client.complete("", user_prompt("Hi."))) == {"corrected": "x"}
     assert client.complete("", user_prompt("Yo.")) == "raw"
+
+
+def test_env_file_lookup_order(tmp_path: object, monkeypatch: pytest.MonkeyPatch) -> None:
+    from pathlib import Path
+
+    from grammar_agent import config
+
+    assert isinstance(tmp_path, Path)
+    project, home_cfg = tmp_path / "project", tmp_path / "xdg"
+    project.mkdir()
+    (home_cfg / "grammar-agent").mkdir(parents=True)
+    (home_cfg / "grammar-agent" / ".env").write_text("GEMINI_MODEL=from-user\n")
+    monkeypatch.setenv("XDG_CONFIG_HOME", str(home_cfg))
+    monkeypatch.delenv("GRAMMAR_AGENT_ENV_FILE", raising=False)
+    monkeypatch.chdir(project)
+    assert config.env_files() == [home_cfg / "grammar-agent" / ".env"]
+
+    (project / ".env").write_text("GEMINI_MODEL=from-project\n")
+    assert config.env_files() == [project / ".env", home_cfg / "grammar-agent" / ".env"]
+
+    monkeypatch.setenv("GRAMMAR_AGENT_ENV_FILE", str(home_cfg / "grammar-agent" / ".env"))
+    assert config.env_files() == [home_cfg / "grammar-agent" / ".env"]
+
+
+def test_default_cache_is_per_user(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("XDG_CACHE_HOME", "/tmp/xdg-cache")
+    assert str(load_settings({}).cache_path) == "/tmp/xdg-cache/grammar-agent/responses.sqlite"
