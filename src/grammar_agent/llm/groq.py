@@ -13,7 +13,7 @@ API_URL = "https://api.groq.com/openai/v1/chat/completions"
 class GroqClient:
     def __init__(self, api_key: str, model: str, timeout: float = 60.0) -> None:
         if not api_key:
-            raise LLMError("GROQ_API_KEY is not set. Add it to your .env file.")
+            raise LLMError("GROQ_API_KEY is not set. Add it to your .env file.", fatal=True)
         self._api_key = api_key
         self._model = model
         self._http = httpx.Client(timeout=timeout)

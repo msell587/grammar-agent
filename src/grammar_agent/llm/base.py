@@ -6,7 +6,16 @@ from typing import Protocol, runtime_checkable
 
 
 class LLMError(RuntimeError):
-    """A non-retryable provider failure (bad key, unknown model, server down...)."""
+    """A provider failure that retrying the same request will not fix.
+
+    ``fatal`` marks errors that will affect every sentence (bad API key, unknown
+    model, provider unreachable). The checker stops the run for those instead of
+    flagging every sentence one by one.
+    """
+
+    def __init__(self, message: str, *, fatal: bool = False) -> None:
+        super().__init__(message)
+        self.fatal = fatal
 
 
 class RateLimitError(LLMError):

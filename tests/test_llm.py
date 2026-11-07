@@ -102,3 +102,11 @@ def test_make_client_mock_and_missing_key() -> None:
     assert make_client(Settings().with_overrides(provider="mock")).model_id == "mock:mock"
     with pytest.raises(LLMError):
         make_client(Settings(provider="gemini", gemini_api_key=None))
+
+
+def test_auth_errors_are_fatal_but_server_errors_retry() -> None:
+    with pytest.raises(LLMError) as info:
+        post_json(_client(403), "http://x", {}, {}, "P")
+    assert info.value.fatal
+    with pytest.raises(RateLimitError):
+        post_json(_client(503), "http://x", {}, {}, "P")

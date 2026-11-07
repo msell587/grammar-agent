@@ -32,7 +32,7 @@ def _to_gemini_schema(schema: dict[str, Any]) -> dict[str, Any]:
 class GeminiClient:
     def __init__(self, api_key: str, model: str, timeout: float = 60.0) -> None:
         if not api_key:
-            raise LLMError("GEMINI_API_KEY is not set. Add it to your .env file.")
+            raise LLMError("GEMINI_API_KEY is not set. Add it to your .env file.", fatal=True)
         self._api_key = api_key
         self._model = model
         self._http = httpx.Client(timeout=timeout)
