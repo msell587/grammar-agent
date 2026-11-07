@@ -4,12 +4,24 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable, Mapping, Sequence
+from pathlib import Path
 
 from grammar_agent.prompts import sentence_from_user_prompt
 
 # A scripted reply is raw text, or an exception to raise (e.g. RateLimitError).
 Reply = str | BaseException
 Script = Reply | Sequence[Reply] | Callable[[str], Reply]
+
+
+def load_script(path: Path) -> dict[str, Script]:
+    """Load ``{sentence: reply}`` from JSON; a reply may be an object or raw text."""
+    data = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(data, dict):
+        raise ValueError(f"{path} must contain a JSON object mapping sentences to replies")
+    return {
+        str(sentence): reply if isinstance(reply, str) else json.dumps(reply)
+        for sentence, reply in data.items()
+    }
 
 
 def no_change_reply(sentence: str) -> str:

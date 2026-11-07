@@ -52,6 +52,9 @@ class Settings:
     groq_api_key: str | None = None
     ollama_host: str = "http://localhost:11434"
 
+    # Offline demo: a JSON file of scripted replies for the mock provider
+    mock_script: Path | None = None
+
     def with_overrides(self, **overrides: Any) -> Settings:
         """Return a copy with every non-None override applied and validated."""
         clean = {k: v for k, v in overrides.items() if v is not None}
@@ -98,4 +101,7 @@ def load_settings(env: Mapping[str, str] | None = None, *, dotenv: bool = True) 
         gemini_api_key=env.get("GEMINI_API_KEY") or None,
         groq_api_key=env.get("GROQ_API_KEY") or None,
         ollama_host=env.get("OLLAMA_HOST", "") or Settings.ollama_host,
+        mock_script=Path(env["GRAMMAR_AGENT_MOCK_SCRIPT"])
+        if env.get("GRAMMAR_AGENT_MOCK_SCRIPT")
+        else None,
     ).validated()

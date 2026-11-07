@@ -110,3 +110,15 @@ def test_auth_errors_are_fatal_but_server_errors_retry() -> None:
     assert info.value.fatal
     with pytest.raises(RateLimitError):
         post_json(_client(503), "http://x", {}, {}, "P")
+
+
+def test_mock_script_file(tmp_path: object) -> None:
+    from pathlib import Path
+
+    assert isinstance(tmp_path, Path)
+    path = tmp_path / "script.json"
+    path.write_text(json.dumps({"Hi.": {"corrected": "x"}, "Yo.": "raw"}), encoding="utf-8")
+    settings = Settings().with_overrides(provider="mock", mock_script=path)
+    client = make_client(settings)
+    assert json.loads(client.complete("", user_prompt("Hi."))) == {"corrected": "x"}
+    assert client.complete("", user_prompt("Yo.")) == "raw"

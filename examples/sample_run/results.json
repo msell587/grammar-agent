@@ -1,0 +1,148 @@
+{
+  "format_version": 1,
+  "created_at": "2026-11-07T20:03:41+00:00",
+  "source_name": "sample.txt",
+  "model": "mock:mock",
+  "level": "intermediate",
+  "source_text": "Their going to the libary tomorow. Me and him has finished the report, but we forgot to sent it. The meeting is on Tuesday.\n\nIts a good idea, isnt it? The results was better then we expected.\n",
+  "results": [
+    {
+      "sentence": {
+        "index": 1,
+        "text": "Their going to the libary tomorow.",
+        "start": 0,
+        "end": 34
+      },
+      "status": "changes_proposed",
+      "corrected": "They're going to the library tomorrow.",
+      "changes": [
+        {
+          "id": "1.1",
+          "original_span": "Their",
+          "replacement": "They're",
+          "type": "grammar",
+          "explanation": "'Their' means 'belonging to them'. Here you need 'they're', which is short for 'they are'.",
+          "offset": 0
+        },
+        {
+          "id": "1.2",
+          "original_span": "libary",
+          "replacement": "library",
+          "type": "spelling",
+          "explanation": "'Library' has an 'r' after the 'b'. Many people forget it because it is often not pronounced clearly.",
+          "offset": 19
+        },
+        {
+          "id": "1.3",
+          "original_span": "tomorow",
+          "replacement": "tomorrow",
+          "type": "spelling",
+          "explanation": "'Tomorrow' is spelled with one 'm' and two 'r's.",
+          "offset": 26
+        }
+      ],
+      "review_reasons": []
+    },
+    {
+      "sentence": {
+        "index": 2,
+        "text": "Me and him has finished the report, but we forgot to sent it.",
+        "start": 35,
+        "end": 96
+      },
+      "status": "needs_manual_review",
+      "corrected": "He and I have completed the report, but we neglected to send it.",
+      "changes": [
+        {
+          "id": "2.1",
+          "original_span": "Me and him has",
+          "replacement": "He and I have",
+          "type": "grammar",
+          "explanation": "Use 'He and I' as the subject, and 'have' because the subject is plural.",
+          "offset": 0
+        },
+        {
+          "id": "2.2",
+          "original_span": "sent",
+          "replacement": "send",
+          "type": "grammar",
+          "explanation": "After 'to', use the base form of the verb: 'to send'.",
+          "offset": 53
+        }
+      ],
+      "review_reasons": [
+        "the listed changes do not produce the model's corrected sentence (the model made edits it did not explain)"
+      ]
+    },
+    {
+      "sentence": {
+        "index": 3,
+        "text": "The meeting is on Tuesday.",
+        "start": 97,
+        "end": 123
+      },
+      "status": "no_changes",
+      "corrected": "The meeting is on Tuesday.",
+      "changes": [],
+      "review_reasons": []
+    },
+    {
+      "sentence": {
+        "index": 4,
+        "text": "Its a good idea, isnt it?",
+        "start": 125,
+        "end": 150
+      },
+      "status": "changes_proposed",
+      "corrected": "It's a good idea, isn't it?",
+      "changes": [
+        {
+          "id": "4.1",
+          "original_span": "Its",
+          "replacement": "It's",
+          "type": "punctuation",
+          "explanation": "'It's' with an apostrophe is short for 'it is'. 'Its' without one means 'belonging to it'.",
+          "offset": 0
+        },
+        {
+          "id": "4.2",
+          "original_span": "isnt",
+          "replacement": "isn't",
+          "type": "punctuation",
+          "explanation": "'Isn't' is short for 'is not', so it needs an apostrophe where the letter 'o' was removed.",
+          "offset": 17
+        }
+      ],
+      "review_reasons": []
+    },
+    {
+      "sentence": {
+        "index": 5,
+        "text": "The results was better then we expected.",
+        "start": 151,
+        "end": 191
+      },
+      "status": "changes_proposed",
+      "corrected": "The results were better than we expected.",
+      "changes": [
+        {
+          "id": "5.1",
+          "original_span": "results was",
+          "replacement": "results were",
+          "type": "grammar",
+          "explanation": "'Results' is plural, so the verb must be 'were', not 'was'.",
+          "offset": 4
+        },
+        {
+          "id": "5.2",
+          "original_span": "then",
+          "replacement": "than",
+          "type": "spelling",
+          "explanation": "Use 'than' to compare things. 'Then' is about time, as in 'first this, then that'.",
+          "offset": 23
+        }
+      ],
+      "review_reasons": []
+    }
+  ]
+}

@@ -51,6 +51,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--max-length-ratio", type=float, help="reject corrections whose length changes more"
     )
     check.add_argument("--cache", type=Path, help="SQLite cache file")
+    check.add_argument(
+        "--mock-script", type=Path, help="JSON of scripted replies for --provider mock (demo)"
+    )
     check.add_argument("--no-cache", action="store_true", help="always call the model")
     check.add_argument("--force", action="store_true", help="overwrite an existing run")
 
@@ -93,6 +96,7 @@ def cmd_check(args: argparse.Namespace, client: LLMClient | None = None) -> int:
         request_delay=args.delay,
         max_length_ratio=args.max_length_ratio,
         cache_path=args.cache,
+        mock_script=args.mock_script,
     )
     out: Path = args.out
     if (out / RESULTS_FILE).exists() and not args.force:
