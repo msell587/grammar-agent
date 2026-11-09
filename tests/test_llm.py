@@ -149,3 +149,40 @@ def test_env_file_lookup_order(tmp_path: object, monkeypatch: pytest.MonkeyPatch
 def test_default_cache_is_per_user(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("XDG_CACHE_HOME", "/tmp/xdg-cache")
     assert str(load_settings({}).cache_path) == "/tmp/xdg-cache/grammar-agent/responses.sqlite"
+
+
+def _capture_gemini_payload(monkeypatch: pytest.MonkeyPatch) -> dict[str, object]:
+    sent: dict[str, object] = {}
+
+    def fake_post(_http: object, _url: str, payload: dict[str, object], *_args: object) -> object:
+        sent.update(payload)
+        return {"candidates": [{"content": {"parts": [{"text": "{}"}]}}]}
+
+    monkeypatch.setattr("grammar_agent.llm.gemini.post_json", fake_post)
+    return sent
+
+
+def test_gemini_uses_grammar_schema_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    sent = _capture_gemini_payload(monkeypatch)
+    GeminiClient("key", "m").complete("sys", "user")
+    config = sent["generationConfig"]
+    assert isinstance(config, dict)
+    assert config["responseSchema"] == _to_gemini_schema(RESPONSE_SCHEMA)
+
+
+def test_gemini_accepts_a_custom_schema(monkeypatch: pytest.MonkeyPatch) -> None:
+    sent = _capture_gemini_payload(monkeypatch)
+    schema = {"type": "object", "properties": {"items": {"type": "array"}}}
+    GeminiClient("key", "m").complete("sys", "user", schema=schema)
+    config = sent["generationConfig"]
+    assert isinstance(config, dict)
+    assert config["responseSchema"] == {
+        "type": "OBJECT",
+        "properties": {"items": {"type": "ARRAY"}},
+    }
+    assert schema["type"] == "object"  # the caller's schema is not modified
+
+
+def test_mock_scripts_non_grammar_prompts_by_full_text() -> None:
+    client = MockClient({"Make a quiz.": '{"items": []}'})
+    assert client.complete("sys", "Make a quiz.", schema={"type": "object"}) == '{"items": []}'
