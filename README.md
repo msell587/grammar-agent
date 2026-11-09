@@ -93,7 +93,7 @@ The provider is one setting. Change `GRAMMAR_AGENT_PROVIDER` in `.env`, or pass 
 | `ollama` | Free, fully local | Install [Ollama](https://ollama.com), then run `ollama pull llama3.1:8b` |
 | `mock` | Free, offline | No setup needed. Replays scripted replies (for tests and demos) |
 
-Adding another provider means writing one small class with a `model_id` property and a `complete(system, user) -> str` method. See `src/grammar_agent/llm/groq.py` (about 40 lines).
+Adding another provider means writing one small class with a `model_id` property and a `complete(system, user, schema=None) -> str` method. `schema` defaults to the grammar check's answer format; other tools built on grammar-agent can pass their own JSON schema to get a different kind of answer. See `src/grammar_agent/llm/groq.py` (about 40 lines).
 
 ## Usage
 

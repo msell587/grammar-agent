@@ -41,14 +41,14 @@ class GeminiClient:
     def model_id(self) -> str:
         return f"gemini:{self._model}"
 
-    def complete(self, system: str, user: str) -> str:
+    def complete(self, system: str, user: str, schema: dict[str, Any] | None = None) -> str:
         payload = {
             "systemInstruction": {"parts": [{"text": system}]},
             "contents": [{"role": "user", "parts": [{"text": user}]}],
             "generationConfig": {
                 "temperature": 0,
                 "responseMimeType": "application/json",
-                "responseSchema": _to_gemini_schema(RESPONSE_SCHEMA),
+                "responseSchema": _to_gemini_schema(schema or RESPONSE_SCHEMA),
             },
         }
         data = post_json(

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import httpx
 
 from grammar_agent.llm.base import LLMError
@@ -19,11 +21,11 @@ class OllamaClient:
     def model_id(self) -> str:
         return f"ollama:{self._model}"
 
-    def complete(self, system: str, user: str) -> str:
+    def complete(self, system: str, user: str, schema: dict[str, Any] | None = None) -> str:
         payload = {
             "model": self._model,
             "stream": False,
-            "format": RESPONSE_SCHEMA,  # structured outputs (Ollama >= 0.5)
+            "format": schema or RESPONSE_SCHEMA,  # structured outputs (Ollama >= 0.5)
             "options": {"temperature": 0},
             "messages": [
                 {"role": "system", "content": system},

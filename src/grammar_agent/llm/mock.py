@@ -51,8 +51,12 @@ class MockClient:
     def model_id(self) -> str:
         return f"mock:{self._model}"
 
-    def complete(self, system: str, user: str) -> str:
-        sentence = sentence_from_user_prompt(user)
+    def complete(self, system: str, user: str, schema: Mapping[str, object] | None = None) -> str:
+        # Grammar-check prompts are keyed by their sentence; any other prompt by its full text.
+        try:
+            sentence = sentence_from_user_prompt(user)
+        except ValueError:
+            sentence = user
         self.calls.append(sentence)
         entry = self._script.get(sentence)
         reply: Reply

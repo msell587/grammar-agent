@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 
 class LLMError(RuntimeError):
@@ -39,8 +39,14 @@ class LLMClient(Protocol):
         """A stable identifier such as ``"gemini:gemini-3.5-flash"`` (used in cache keys)."""
         ...
 
-    def complete(self, system: str, user: str) -> str:
-        """Return the model's raw reply. Raise RateLimitError or LLMError on failure."""
+    def complete(self, system: str, user: str, schema: dict[str, Any] | None = None) -> str:
+        """Return the model's raw reply. Raise RateLimitError or LLMError on failure.
+
+        ``schema`` is the JSON schema the reply must follow. It defaults to the grammar
+        check's ``RESPONSE_SCHEMA``; other tools built on grammar-agent can pass their own.
+        Providers that enforce schemas while generating (Gemini, Ollama) use it; the rest
+        only promise JSON, so callers must still validate the reply.
+        """
         ...
 
 

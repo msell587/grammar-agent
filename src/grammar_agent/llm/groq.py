@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import httpx
 
 from grammar_agent.llm.base import LLMError
@@ -22,7 +24,8 @@ class GroqClient:
     def model_id(self) -> str:
         return f"groq:{self._model}"
 
-    def complete(self, system: str, user: str) -> str:
+    def complete(self, system: str, user: str, schema: dict[str, Any] | None = None) -> str:
+        # Groq's JSON mode guarantees JSON but not a schema, so ``schema`` is not sent.
         payload = {
             "model": self._model,
             "temperature": 0,
