@@ -8,18 +8,21 @@
         "original_span": "Their",
         "replacement": "They're",
         "type": "grammar",
+        "category": "word_choice",
         "explanation": "'Their' means 'belonging to them'. Here you need 'they're', which is short for 'they are'."
       },
       {
         "original_span": "libary",
         "replacement": "library",
         "type": "spelling",
+        "category": "spelling",
         "explanation": "'Library' has an 'r' after the 'b'. Many people forget it because it is often not pronounced clearly."
       },
       {
         "original_span": "tomorow",
         "replacement": "tomorrow",
         "type": "spelling",
+        "category": "spelling",
         "explanation": "'Tomorrow' is spelled with one 'm' and two 'r's."
       }
     ]
@@ -33,12 +36,14 @@
         "original_span": "Me and him has",
         "replacement": "He and I have",
         "type": "grammar",
+        "category": "pronouns",
         "explanation": "Use 'He and I' as the subject, and 'have' because the subject is plural."
       },
       {
         "original_span": "sent",
         "replacement": "send",
         "type": "grammar",
+        "category": "verb_tense",
         "explanation": "After 'to', use the base form of the verb: 'to send'."
       }
     ]
@@ -52,12 +57,14 @@
         "original_span": "Its",
         "replacement": "It's",
         "type": "punctuation",
+        "category": "punctuation",
         "explanation": "'It's' with an apostrophe is short for 'it is'. 'Its' without one means 'belonging to it'."
       },
       {
         "original_span": "isnt",
         "replacement": "isn't",
         "type": "punctuation",
+        "category": "punctuation",
         "explanation": "'Isn't' is short for 'is not', so it needs an apostrophe where the letter 'o' was removed."
       }
     ]
@@ -71,12 +78,14 @@
         "original_span": "results was",
         "replacement": "results were",
         "type": "grammar",
+        "category": "subject_verb_agreement",
         "explanation": "'Results' is plural, so the verb must be 'were', not 'was'."
       },
       {
         "original_span": "then",
         "replacement": "than",
         "type": "spelling",
+        "category": "word_choice",
         "explanation": "Use 'than' to compare things. 'Then' is about time, as in 'first this, then that'."
       }
     ]

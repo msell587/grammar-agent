@@ -75,3 +75,17 @@ def test_lenient_on_bool_strings_and_unknown_type() -> None:
 def test_extract_json_object_rejects_empty() -> None:
     with pytest.raises(ParseError):
         extract_json_object("   ")
+
+
+def test_category_parsed_and_normalized() -> None:
+    change = {**GOOD["changes"][0], "category": "Subject-Verb Agreement"}
+    result = parse_response(json.dumps({**GOOD, "changes": [change]}))
+    assert result.changes[0].category == "subject_verb_agreement"
+
+
+def test_missing_or_unknown_category_falls_back_without_retry() -> None:
+    spelling = {**GOOD["changes"][0], "type": "spelling"}
+    spelling.pop("category", None)
+    unknown = {**GOOD["changes"][0], "category": "vibes"}
+    result = parse_response(json.dumps({**GOOD, "changes": [spelling, unknown]}))
+    assert [c.category for c in result.changes] == ["spelling", "other"]

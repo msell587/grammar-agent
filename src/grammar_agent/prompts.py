@@ -5,8 +5,10 @@ from __future__ import annotations
 import json
 from typing import Any
 
+from grammar_agent.models import MISTAKE_CATEGORIES
+
 # Bump when the prompt wording changes so cached answers are not reused.
-PROMPT_VERSION = "1"
+PROMPT_VERSION = "2"
 
 RESPONSE_SCHEMA: dict[str, Any] = {
     "type": "object",
@@ -25,9 +27,10 @@ RESPONSE_SCHEMA: dict[str, Any] = {
                         "type": "string",
                         "enum": ["spelling", "grammar", "punctuation", "other"],
                     },
+                    "category": {"type": "string", "enum": list(MISTAKE_CATEGORIES)},
                     "explanation": {"type": "string"},
                 },
-                "required": ["original_span", "replacement", "type", "explanation"],
+                "required": ["original_span", "replacement", "type", "category", "explanation"],
             },
         },
     },
@@ -63,7 +66,8 @@ that does so.
 5. Every "original_span" must be copied verbatim from the original sentence. Include a \
 neighbouring word if needed so the span appears only once. Applying every change from left \
 to right must turn "original" into "corrected" exactly.
-6. "type" is one of: spelling, grammar, punctuation, other.
+6. "type" is one of: spelling, grammar, punctuation, other. "category" names the specific \
+kind of mistake, one of: {categories}. Use "other" only if none fits.
 7. "explanation" is one or two sentences of plain English saying what was wrong and why the \
 fix is right. {level_guidance}
 8. "meaning_preserved" is true only if the corrected sentence means exactly the same thing.
@@ -75,7 +79,9 @@ Reply with a single JSON object that matches this JSON schema, and nothing else:
 
 def system_prompt(level: str) -> str:
     return _SYSTEM_TEMPLATE.format(
-        level_guidance=LEVEL_GUIDANCE[level], schema=json.dumps(RESPONSE_SCHEMA)
+        level_guidance=LEVEL_GUIDANCE[level],
+        categories=", ".join(MISTAKE_CATEGORIES),
+        schema=json.dumps(RESPONSE_SCHEMA),
     )
 
 

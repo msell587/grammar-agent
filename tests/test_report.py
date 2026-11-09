@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 from grammar_agent.report import code, inline_diff, quote, render_report
 from grammar_agent.run import Run, load_run, save_run
 from tests.test_apply import make_run
@@ -38,3 +40,10 @@ def test_run_round_trip(tmp_path: object) -> None:
     save_run(run, tmp_path)
     loaded: Run = load_run(tmp_path)
     assert loaded.to_dict() == run.to_dict()
+
+
+def test_category_shown_when_it_adds_detail() -> None:
+    run = make_run()
+    first = run.results[0]
+    first.changes[0] = replace(first.changes[0], type="grammar", category="verb_tense")
+    assert "*grammar, verb tense*" in render_report(run)

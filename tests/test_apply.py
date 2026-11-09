@@ -170,3 +170,9 @@ def test_explicit_lists_errors(accept: str | None, reject: str | None, message: 
 
     with pytest.raises(DecisionError, match=message):
         decisions_from_lists(make_run(), accept, reject)
+
+
+def test_change_from_dict_without_category_defaults_to_other() -> None:
+    data = _change(1, 1, "teh", "the", 0).to_dict()
+    del data["category"]
+    assert Change.from_dict(data).category == "other"
