@@ -86,6 +86,7 @@ def locate_changes(sentence: str, sentence_index: int, raw: RawResult) -> Guardr
                 type=raw_change.type,
                 explanation=raw_change.explanation,
                 offset=offset,
+                category=raw_change.category,
             )
         )
 
@@ -103,6 +104,7 @@ def locate_changes(sentence: str, sentence_index: int, raw: RawResult) -> Guardr
             type=c.type,
             explanation=c.explanation,
             offset=c.offset,
+            category=c.category,
         )
         for n, c in enumerate(located, start=1)
     ]

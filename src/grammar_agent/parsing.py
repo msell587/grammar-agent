@@ -12,7 +12,7 @@ import re
 from dataclasses import dataclass
 from typing import Any
 
-from grammar_agent.models import CHANGE_TYPES
+from grammar_agent.models import CHANGE_TYPES, MISTAKE_CATEGORIES
 
 
 class ParseError(ValueError):
@@ -25,6 +25,7 @@ class RawChange:
     replacement: str
     type: str
     explanation: str
+    category: str = "other"
 
 
 @dataclass(frozen=True)
@@ -69,6 +70,16 @@ def _bool(data: dict[str, Any], key: str) -> bool:
     raise ParseError(f"{key!r} must be a boolean")
 
 
+def _category(item: dict[str, Any], change_type: str) -> str:
+    """Normalize the optional category. A missing or unknown one is not worth a retry."""
+    value = item.get("category")
+    if isinstance(value, str):
+        slug = re.sub(r"[\s\-]+", "_", value.strip().lower())
+        if slug in MISTAKE_CATEGORIES:
+            return slug
+    return change_type if change_type in MISTAKE_CATEGORIES else "other"
+
+
 def parse_response(text: str) -> RawResult:
     """Parse and validate one model reply. Raises ParseError if it is unusable."""
     data = extract_json_object(text)
@@ -81,13 +92,15 @@ def parse_response(text: str) -> RawResult:
             raise ParseError(f"change {i} is not an object")
         where = f"change {i}: "
         kind = _str(item, "type", where).strip().lower()
+        kind = kind if kind in CHANGE_TYPES else "other"
         changes.append(
             RawChange(
                 original_span=_str(item, "original_span", where),
                 replacement=_str(item, "replacement", where),
                 # An unknown label is not worth a retry; keep the change, file it as "other".
-                type=kind if kind in CHANGE_TYPES else "other",
+                type=kind,
                 explanation=_str(item, "explanation", where).strip(),
+                category=_category(item, kind),
             )
         )
     return RawResult(

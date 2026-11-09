@@ -77,6 +77,7 @@ def decisions_document(run: Run, decisions: list[Decision], mode: str) -> dict[s
             {
                 **d.to_dict(),
                 "type": by_id[d.change_id].type,
+                "category": by_id[d.change_id].category,
                 "original_span": by_id[d.change_id].original_span,
                 "replacement": by_id[d.change_id].replacement,
             }

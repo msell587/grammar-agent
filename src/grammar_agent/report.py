@@ -75,8 +75,14 @@ def _sentence_section(r: SentenceResult) -> list[str]:
         "",
     ]
     for c in r.changes:
+        # Name the category only when it adds something beyond the type.
+        kind = (
+            c.type
+            if c.category in (c.type, "other")
+            else f"{c.type}, {c.category.replace('_', ' ')}"
+        )
         lines.append(
-            f"- **[{c.id}]** *{c.type}*: {code(c.original_span)} → {code(c.replacement)}. "
+            f"- **[{c.id}]** *{kind}*: {code(c.original_span)} → {code(c.replacement)}. "
             f"{c.explanation}"
         )
     lines.append("")

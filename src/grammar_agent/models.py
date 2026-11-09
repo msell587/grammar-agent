@@ -13,6 +13,22 @@ from typing import Any
 
 CHANGE_TYPES = ("spelling", "grammar", "punctuation", "other")
 
+# Finer-grained mistake categories, so learners can see which kinds of mistakes they repeat.
+MISTAKE_CATEGORIES = (
+    "verb_tense",
+    "subject_verb_agreement",
+    "articles",
+    "prepositions",
+    "plurals",
+    "word_order",
+    "word_choice",
+    "pronouns",
+    "spelling",
+    "punctuation",
+    "capitalization",
+    "other",
+)
+
 
 class Status(StrEnum):
     """Outcome of checking one sentence."""
@@ -46,6 +62,7 @@ class Change:
     type: str
     explanation: str
     offset: int  # where original_span starts inside the sentence text
+    category: str = "other"  # one of MISTAKE_CATEGORIES
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -59,6 +76,8 @@ class Change:
             type=str(data["type"]),
             explanation=str(data["explanation"]),
             offset=int(data["offset"]),
+            # Results written before categories existed have none.
+            category=str(data.get("category", "other")),
         )
 
 
