@@ -3,8 +3,8 @@
 ``.env`` lookup order (earlier wins; real environment variables beat all files):
 
 1. ``$GRAMMAR_AGENT_ENV_FILE`` if set (and then nothing else),
-2. ``./.env`` in the current directory (handy while developing),
-3. ``~/.config/grammar-agent/.env`` (the private, per-user file for a global install).
+2. ``~/.config/grammar-agent/.env`` (the private, per-user file),
+3. ``./.env`` in the current directory (fills in anything the per-user file leaves unset).
 """
 
 from __future__ import annotations
@@ -44,8 +44,10 @@ def default_cache_path() -> Path:
 def env_files() -> list[Path]:
     """The .env files that would be loaded, in priority order (existing files only)."""
     explicit = os.environ.get("GRAMMAR_AGENT_ENV_FILE")
+    # The per-user file comes first, so an unrelated project's .env (say, in the folder
+    # of an app you are proofreading) can never swap in its own key or model.
     candidates = (
-        [Path(explicit).expanduser()] if explicit else [Path.cwd() / ".env", user_env_file()]
+        [Path(explicit).expanduser()] if explicit else [user_env_file(), Path.cwd() / ".env"]
     )
     return [p for p in candidates if p.is_file()]
 
@@ -78,7 +80,7 @@ class Settings:
     backoff_initial: float = 2.0
     backoff_max: float = 60.0
     rate_limit_attempts: int = 5
-    timeout: float = 60.0
+    timeout: float = 30.0  # per request; a healthy reply takes a few seconds
 
     # Cache
     cache_path: Path = field(default_factory=default_cache_path)

@@ -69,3 +69,18 @@ def test_gives_up_after_attempts() -> None:
     with pytest.raises(RateLimitError):
         rl.call(fn)
     assert len(fake.slept) == 2
+
+
+def test_retries_are_logged(caplog: pytest.LogCaptureFixture) -> None:
+    fake = FakeClock()
+    rl = limiter(fake, backoff_initial=1.0, attempts=3)
+    errors = [RateLimitError("Gemini returned HTTP 503")]
+
+    def fn() -> str:
+        if errors:
+            raise errors.pop(0)
+        return "ok"
+
+    with caplog.at_level("WARNING"):
+        assert rl.call(fn) == "ok"
+    assert "HTTP 503; retrying in 1s (attempt 2 of 3)" in caplog.text

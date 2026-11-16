@@ -29,8 +29,53 @@ class GuardrailOutcome:
         return not self.reasons
 
 
+# Typographic quotes and their ASCII forms. Each maps one character to one character, so
+# offsets found in folded text are valid in the original text too.
+_QUOTE_FOLD = str.maketrans(
+    {chr(0x2018): "'", chr(0x2019): "'", chr(0x201C): '"', chr(0x201D): '"'}
+)
+_CURLY = frozenset(chr(c) for c in (0x2018, 0x2019, 0x201C, 0x201D))
+
+
+def fold_quotes(text: str) -> str:
+    """Replace curly quotes with straight ones (same length)."""
+    return text.translate(_QUOTE_FOLD)
+
+
 def _norm(text: str) -> str:
-    return " ".join(text.split())
+    return " ".join(fold_quotes(text).split())
+
+
+def _match_quote_style(replacement: str, sentence: str) -> str:
+    """Use curly quotes in the replacement if the sentence is written with curly quotes only.
+
+    Models often answer with straight quotes even when the source uses curly ones (as Mac and
+    phone keyboards type by default); without this, an accepted fix would mix the two styles.
+    """
+    uses_curly = any(ch in _CURLY for ch in sentence)
+    if not uses_curly or "'" in sentence or '"' in sentence:
+        return replacement
+    out: list[str] = []
+    for i, ch in enumerate(replacement):
+        if ch == "'":
+            out.append(chr(0x2019))
+        elif ch == '"':
+            before = replacement[i - 1] if i else " "
+            out.append(chr(0x201C) if before.isspace() or before in "([" else chr(0x201D))
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
+def _find(sentence: str, span: str, cursor: int) -> int:
+    """Find ``span`` at/after ``cursor``, then anywhere; then the same ignoring quote style."""
+    for haystack, needle in ((sentence, span), (fold_quotes(sentence), fold_quotes(span))):
+        offset = haystack.find(needle, cursor)
+        if offset == -1:
+            offset = haystack.find(needle)  # the model may list changes out of order
+        if offset != -1:
+            return offset
+    return -1
 
 
 def apply_changes(text: str, changes: list[Change]) -> str:
@@ -71,18 +116,17 @@ def locate_changes(sentence: str, sentence_index: int, raw: RawResult) -> Guardr
                 "so it cannot be located"
             )
             continue
-        offset = sentence.find(span, cursor)
-        if offset == -1:
-            offset = sentence.find(span)  # the model may list changes out of order
+        offset = _find(sentence, span, cursor)
         if offset == -1:
             outcome.reasons.append(f"original_span {span!r} was not found verbatim in the sentence")
             continue
+        span = sentence[offset : offset + len(span)]  # the source's exact characters
         cursor = offset + len(span)
         located.append(
             Change(
                 id="",
                 original_span=span,
-                replacement=raw_change.replacement,
+                replacement=_match_quote_style(raw_change.replacement, sentence),
                 type=raw_change.type,
                 explanation=raw_change.explanation,
                 offset=offset,
@@ -125,7 +169,8 @@ def run_guardrails(
     length_reason = check_length_ratio(sentence, raw.corrected, config)
     if length_reason:
         reasons.append(length_reason)
-    if not reasons and apply_changes(sentence, outcome.changes) != raw.corrected:
+    applied = fold_quotes(apply_changes(sentence, outcome.changes))
+    if not reasons and applied != fold_quotes(raw.corrected):
         reasons.append(
             "the listed changes do not produce the model's corrected sentence "
             "(the model made edits it did not explain)"

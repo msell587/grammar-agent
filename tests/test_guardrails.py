@@ -103,3 +103,37 @@ def test_noop_change_is_ignored() -> None:
     s = "Fine."
     out = run_guardrails(s, 1, raw(s, s, [("Fine", "Fine")]), CONFIG)
     assert out.passed and out.changes == []
+
+
+L, R, APOS = chr(0x201C), chr(0x201D), chr(0x2019)
+
+
+def test_curly_quotes_in_source_match_straight_quotes_from_model() -> None:
+    s = f"She said {L}its to late{R} and didn{APOS}t came."
+    # The model echoes everything with straight quotes.
+    model_view = s.replace(L, '"').replace(R, '"').replace(APOS, "'")
+    corrected = "She said \"it's too late\" and didn't come."
+    out = run_guardrails(
+        s,
+        1,
+        raw(
+            model_view,
+            corrected,
+            [("its to", "it's too"), ("didn't came", "didn't come")],
+        ),
+        CONFIG,
+    )
+    assert out.passed, out.reasons
+    # Spans point at the source's own characters; replacements adopt its curly style.
+    assert out.changes[1].original_span == f"didn{APOS}t came"
+    assert out.changes[1].replacement == f"didn{APOS}t come"
+    assert (
+        apply_changes(s, out.changes) == f"She said {L}it{APOS}s too late{R} and didn{APOS}t come."
+    )
+
+
+def test_straight_quote_source_is_left_straight() -> None:
+    s = "It's fine, isnt it?"
+    out = run_guardrails(s, 1, raw(s, "It's fine, isn't it?", [("isnt", "isn't")]), CONFIG)
+    assert out.passed
+    assert out.changes[0].replacement == "isn't"
