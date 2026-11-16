@@ -21,7 +21,7 @@ def code(text: str) -> str:
 def quote(text: str) -> str:
     """A Markdown blockquote line; escape characters that would start Markdown syntax."""
     escaped = re.sub(r"([\\*_\[\]<>#|])", r"\\\1", text)
-    return "> " + escaped.replace("\n", "\n> ")
+    return "> " + escaped.replace("\r\n", "\n").replace("\n", "\n> ")
 
 
 def inline_diff(sentence: str, changes: list[Change]) -> str:

@@ -66,11 +66,11 @@ cp .env.example .env
 
 Open `.env` and paste your key after `GEMINI_API_KEY=`. `.env` is listed in `.gitignore`, so the key is never committed. The code reads keys only from the environment and sends them only in HTTP headers, never in URLs.
 
-Settings are read from the first of these that exists, and real environment variables always win:
+Settings are read from these files, and real environment variables always win:
 
-1. the file named by `GRAMMAR_AGENT_ENV_FILE`, if set;
-2. `./.env` in the folder you run the command from;
-3. `~/.config/grammar-agent/.env`, a private per-user file. Use this one for a global install, so your keys never sit inside a project folder:
+1. the file named by `GRAMMAR_AGENT_ENV_FILE`, if set (and then only that file);
+2. `~/.config/grammar-agent/.env`, a private per-user file. Use it for a global install, so your keys never sit inside a project folder;
+3. `./.env` in the folder you run the command from, which only fills in settings the per-user file leaves out. Because the per-user file wins, an unrelated project's `.env` can't swap in its own key or model.
 
 ```bash
 mkdir -p ~/.config/grammar-agent && cp .env ~/.config/grammar-agent/.env && chmod 600 ~/.config/grammar-agent/.env
@@ -288,7 +288,7 @@ src/grammar_agent/
 - **`meaning_preserved` is self-reported.** It catches only the cases the model admits to. The length and consistency checks are the real backstop.
 - **Insertions need context.** A missing comma must be expressed as replacing a span (for example `However` → `However,`). If the model returns an empty `original_span`, the sentence is flagged rather than guessed at.
 - **The sentence splitter is simple by design.** Unlisted abbreviations, unusual quoting, inline lists and hard-wrapped headings can split or merge sentences wrongly. These cases are documented at the top of `splitter.py` and pinned by a test.
-- **It reads plain text only.** It is English-focused and reads UTF-8 `.txt` input. Windows `\r\n` line endings come out as `\n` in `approved.txt`. Markdown, HTML and code blocks are treated as prose.
+- **It reads plain text only.** It is English-focused and reads UTF-8 text, which may start with a byte-order mark. Line endings, Windows `\r\n` included, are kept exactly in `approved.txt`. Markdown, HTML and code blocks are treated as prose, so don't run it on code or data files (JSON, CSV).
 - **Free tiers are slow on long texts.** The default 6.5-second delay means about 9 sentences per minute on the first run. Reruns are instant because of the cache.
 
 **Next steps:**

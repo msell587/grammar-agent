@@ -93,7 +93,8 @@ def write_outputs(run: Run, decisions: list[Decision], run_dir: Path, mode: str)
     (run_dir / DECISIONS_FILE).write_text(
         json.dumps(doc, indent=2, ensure_ascii=False) + "\n", "utf-8"
     )
-    (run_dir / APPROVED_FILE).write_text(approved, encoding="utf-8")
+    # newline="" writes the text byte-for-byte, so Windows line endings survive.
+    (run_dir / APPROVED_FILE).write_text(approved, encoding="utf-8", newline="")
     return approved
 
 

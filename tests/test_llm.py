@@ -140,7 +140,8 @@ def test_env_file_lookup_order(tmp_path: object, monkeypatch: pytest.MonkeyPatch
     assert config.env_files() == [home_cfg / "grammar-agent" / ".env"]
 
     (project / ".env").write_text("GEMINI_MODEL=from-project\n")
-    assert config.env_files() == [project / ".env", home_cfg / "grammar-agent" / ".env"]
+    # The per-user file wins over a project .env, which only fills gaps.
+    assert config.env_files() == [home_cfg / "grammar-agent" / ".env", project / ".env"]
 
     monkeypatch.setenv("GRAMMAR_AGENT_ENV_FILE", str(home_cfg / "grammar-agent" / ".env"))
     assert config.env_files() == [home_cfg / "grammar-agent" / ".env"]

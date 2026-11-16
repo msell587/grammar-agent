@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import shlex
 import sys
 from pathlib import Path
 
@@ -76,15 +77,36 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _decode(raw: bytes, name: str) -> str:
+    try:
+        return raw.decode("utf-8-sig")  # tolerate a byte-order mark from Windows editors
+    except UnicodeDecodeError as exc:
+        raise ConfigError(
+            f"{name} is not UTF-8 text (byte {exc.start}); re-save it as UTF-8 and try again"
+        ) from exc
+
+
 def _read_input(source: str) -> tuple[str, str]:
+    """Read the text exactly as stored: line endings are kept, so approved.txt matches."""
     if source == "-":
         if sys.stdin.isatty():
             raise ConfigError("no input file given and nothing piped on stdin")
-        return "<stdin>", sys.stdin.read()
-    path = Path(source)
-    if not path.is_file():
-        raise ConfigError(f"input file {path} does not exist")
-    return path.name, path.read_text(encoding="utf-8")
+        name, text = "<stdin>", _decode(sys.stdin.buffer.read(), "stdin")
+    else:
+        path = Path(source)
+        if path.is_dir():
+            raise ConfigError(f"{path} is a folder; give a text file inside it")
+        if not path.is_file():
+            raise ConfigError(f"input file {path} does not exist")
+        name, text = path.name, _decode(path.read_bytes(), path.name)
+    if not text.strip():
+        raise ConfigError(f"{name} is empty; there is nothing to check")
+    return name, text
+
+
+def shell_path(path: Path) -> str:
+    """A path quoted so the printed command can be copied and run as-is."""
+    return shlex.quote(str(path))
 
 
 def _progress(result: SentenceResult, total: int) -> None:
@@ -109,6 +131,8 @@ def cmd_check(args: argparse.Namespace, client: LLMClient | None = None) -> int:
     if settings.provider == "mock" and args.delay is None:
         settings = settings.with_overrides(request_delay=0.0)  # no rate limit to respect
     out: Path = args.out
+    if out.exists() and not out.is_dir():
+        raise ConfigError(f"--out {out} is a file; give a folder for the run")
     if (out / RESULTS_FILE).exists() and not args.force:
         raise ConfigError(f"{out} already contains a run; use --force or another --out")
     source_name, text = _read_input(args.input)
@@ -125,7 +149,7 @@ def cmd_check(args: argparse.Namespace, client: LLMClient | None = None) -> int:
 
     run = Run(source_name, text, client.model_id, settings.level, results)
     save_run(run, out)
-    (out / REPORT_FILE).write_text(render_report(run, str(out)), encoding="utf-8")
+    (out / REPORT_FILE).write_text(render_report(run, shell_path(out)), encoding="utf-8")
     for stale in (DECISIONS_FILE, APPROVED_FILE):
         (out / stale).unlink(missing_ok=True)  # they belonged to the previous run
 
@@ -135,7 +159,7 @@ def cmd_check(args: argparse.Namespace, client: LLMClient | None = None) -> int:
         f"proposed, {len(run.flagged)} flagged for manual review.\n"
         f"Model calls: {checker.llm_calls}, cache hits: {hits}.\n"
         f"Report: {out / REPORT_FILE}\n"
-        f"Next:   grammar-agent apply {out}",
+        f"Next:   grammar-agent apply {shell_path(out)}",
         file=sys.stderr,
     )
     return 0
@@ -178,7 +202,7 @@ def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.WARNING,
-        format="%(levelname)s %(name)s: %(message)s",
+        format="%(levelname)s %(name)s: %(message)s" if args.verbose else "  %(message)s",
     )
     try:
         if args.command == "check":
@@ -187,3 +211,9 @@ def main(argv: list[str] | None = None) -> int:
     except (ConfigError, LLMError, DecisionError, FileNotFoundError, ValueError) as exc:
         _err(str(exc))
         return 1
+    except OSError as exc:  # permissions, a full disk, a path that cannot be created...
+        _err(f"{exc.strerror or exc}: {exc.filename or ''}".rstrip(": "))
+        return 1
+    except KeyboardInterrupt:
+        _err("interrupted; nothing more was written (finished sentences stay cached)")
+        return 130

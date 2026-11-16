@@ -64,3 +64,11 @@ def test_empty_and_whitespace() -> None:
 def test_known_weakness_unlisted_abbreviation() -> None:
     # Documented weakness: "Corp." is not in the list, so this splits too early.
     assert texts("Acme Corp. Makes things.") == ["Acme Corp.", "Makes things."]
+
+
+def test_windows_line_endings() -> None:
+    text = "First one.\r\n\r\nSecond one.\r\n- item\r\n"
+    sentences = split_sentences(text)
+    assert [s.text for s in sentences] == ["First one.", "Second one.", "- item"]
+    for s in sentences:
+        assert text[s.start : s.end] == s.text

@@ -95,3 +95,76 @@ def test_apply_with_explicit_ids(tmp_path: Path) -> None:
     doc = json.loads((out / "decisions.json").read_text())
     assert doc["mode"] == "explicit-ids"
     assert doc["decisions"][0]["decided_by"] == "human"
+
+
+TEH_SCRIPT = {
+    "Teh cat sat.": {
+        "original": "Teh cat sat.",
+        "corrected": "The cat sat.",
+        "meaning_preserved": True,
+        "changes": [
+            {
+                "original_span": "Teh",
+                "replacement": "The",
+                "type": "spelling",
+                "explanation": "Typo.",
+            }
+        ],
+    }
+}
+
+
+def test_windows_line_endings_survive_apply(tmp_path: Path) -> None:
+    script = tmp_path / "script.json"
+    script.write_text(json.dumps(TEH_SCRIPT), encoding="utf-8")
+    src = tmp_path / "in.txt"
+    src.write_bytes(b"Teh cat sat.\r\n\r\nAll good.\r\n")
+    out = tmp_path / "run"
+    assert cli.main(["check", str(src), "--out", str(out), "--mock-script", str(script)]) == 0
+    assert cli.main(["apply", str(out), "--accept", "all"]) == 0
+    assert (out / "approved.txt").read_bytes() == b"The cat sat.\r\n\r\nAll good.\r\n"
+
+
+def test_byte_order_mark_is_ignored(tmp_path: Path) -> None:
+    src = tmp_path / "bom.txt"
+    src.write_bytes(b"\xef\xbb\xbfHello there.")
+    out = tmp_path / "run"
+    assert cli.main(["check", str(src), "--out", str(out)]) == 0
+    assert json.loads((out / "results.json").read_text())["source_text"] == "Hello there."
+
+
+@pytest.mark.parametrize(
+    ("content", "message"),
+    [(b"", "is empty"), (b"  \n\n ", "is empty"), (b"Caf\xe9 au lait.", "not UTF-8")],
+)
+def test_unusable_input_is_a_clean_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], content: bytes, message: str
+) -> None:
+    src = tmp_path / "in.txt"
+    src.write_bytes(content)
+    assert cli.main(["check", str(src), "--out", str(tmp_path / "r")]) == 1
+    assert message in capsys.readouterr().err
+    assert not (tmp_path / "r").exists()
+
+
+def test_folder_input_and_file_out_are_clean_errors(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert cli.main(["check", str(tmp_path), "--out", str(tmp_path / "r")]) == 1
+    assert "is a folder" in capsys.readouterr().err
+    src = tmp_path / "in.txt"
+    src.write_text("Hi.", encoding="utf-8")
+    not_a_dir = tmp_path / "taken"
+    not_a_dir.write_text("x", encoding="utf-8")
+    assert cli.main(["check", str(src), "--out", str(not_a_dir)]) == 1
+    assert "is a file" in capsys.readouterr().err
+
+
+def test_paths_with_spaces_are_quoted(tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    src = tmp_path / "my notes.txt"
+    src.write_text("Hi.", encoding="utf-8")
+    out = tmp_path / "run 1"
+    assert cli.main(["check", str(src), "--out", str(out)]) == 0
+    hint = f"grammar-agent apply '{out}'"
+    assert hint in capsys.readouterr().err
+    assert hint in (out / "report.md").read_text(encoding="utf-8")

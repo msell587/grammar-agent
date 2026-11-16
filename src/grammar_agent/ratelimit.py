@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import random
 import time
 from collections.abc import Callable
@@ -10,6 +11,8 @@ from typing import TypeVar
 from grammar_agent.llm.base import RateLimitError
 
 T = TypeVar("T")
+
+log = logging.getLogger(__name__)
 
 
 class RateLimiter:
@@ -61,5 +64,14 @@ class RateLimiter:
             except RateLimitError as exc:
                 if attempt == self.attempts - 1:
                     raise
-                self._pause(self.backoff_seconds(attempt, exc.retry_after))
+                wait = self.backoff_seconds(attempt, exc.retry_after)
+                # Visible by default, so a long wait never looks like a hang.
+                log.warning(
+                    "%s; retrying in %.0fs (attempt %d of %d)",
+                    exc,
+                    wait,
+                    attempt + 2,
+                    self.attempts,
+                )
+                self._pause(wait)
         raise AssertionError("unreachable")  # pragma: no cover

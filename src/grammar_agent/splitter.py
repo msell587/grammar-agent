@@ -45,7 +45,7 @@ ABBREVIATIONS = frozenset(
 # Closing quotes/brackets that may follow a terminator: " ' ) ] and curly quotes.
 _CLOSERS = "\"')]" + chr(0x201D) + chr(0x2019)
 _TERMINATOR = re.compile(r"[.!?]+[" + re.escape(_CLOSERS) + r"]*(?=\s|$)")
-_BLOCK_BREAK = re.compile(r"\n[ \t]*\n\s*|\n(?=[ \t]*(?:[-*\u2022]|\d+[.)])\s)")
+_BLOCK_BREAK = re.compile(r"\r?\n[ \t]*\r?\n\s*|\r?\n(?=[ \t]*(?:[-*\u2022]|\d+[.)])\s)")
 _WORD_BEFORE = re.compile(r"([A-Za-z][A-Za-z.]*)$")
 
 
